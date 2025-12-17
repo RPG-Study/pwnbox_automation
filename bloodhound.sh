@@ -76,12 +76,6 @@ else
     sudo docker compose logs bloodhound | grep -i password
 fi
 
-# Symlink + status
-echo "🔗 Creating quick-access symlink..."
-mkdir -p "$HOME/bin"
-ln -sf "$BH_DIR/server" "$HOME/bin/bloodhound"
-echo "export BLOODHOUND_DIR=$BH_DIR" >> ~/.bashrc
-
 # Final status
 echo
 echo "🎉 BloodHound ready!"
