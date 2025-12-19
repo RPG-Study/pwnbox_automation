@@ -40,6 +40,9 @@ sudo chown "$USER:$USER" docker-compose.yaml
 echo "⚙️  Changing BloodHound port to 8088..."
 sudo sed -i 's|BLOODHOUND_PORT:-8080|BLOODHOUND_PORT:-8088|g' docker-compose.yaml
 
+# Start docker
+sudo systemctl start docker
+
 # Pull and start BloodHound (docker-compose v2 style)
 echo "🚀 Starting BloodHound + Neo4j..."
 sudo docker compose pull
