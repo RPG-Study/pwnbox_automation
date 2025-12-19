@@ -15,4 +15,18 @@ sudo rm -rf /usr/share/wordlists/* /usr/share/wordlists/.[!.]* /usr/share/wordli
 echo "🗑️  Cleaning /opt..."
 sudo rm -rf /opt/* /opt/.[!.]* /opt/..?* 2>/dev/null || true
 
+# Uninstall seclists (APT package)
+echo "📦 Uninstalling SecLists package..."
+sudo apt-get remove --purge -y seclists 2>/dev/null || true
+
+# Uninstall Ghidra (if installed manually or in /opt)
+echo "💥 Uninstalling Ghidra..."
+sudo rm -rf /opt/ghidra* 2>/dev/null || true
+sudo apt-get remove --purge -y ghidra 2>/dev/null || true
+
+# Run autoremove to clean up unused dependencies
+echo "🧽 Running autoremove..."
+sudo apt-get autoremove -y 2>/dev/null || true
+sudo apt-get autoclean -y 2>/dev/null || true
+
 echo "✅ Cleanup complete!"
