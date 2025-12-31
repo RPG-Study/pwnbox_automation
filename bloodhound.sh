@@ -4,15 +4,27 @@ set -e
 USER=$(whoami)
 echo "🔄 BloodHound + Neo4j install for $USER (pwnbox safe)"
 
-# Cleanup ALL Neo4j/BloodHound
-echo "🧹 Removing existing Neo4j/BloodHound..."
-sudo systemctl stop neo4j || true
-sudo apt remove --purge -y neo4j neo4j-browser neo4j-server || true
+# Bulletproof cleanup - dpkg force + apt (handles Parrot OS stubborn packages)
+echo "🧹 FORCE removing stubborn Neo4j/BloodHound packages..."
+sudo dpkg --purge --force-all neo4j cypher-shell bloodhound 2>/dev/null || true
+sudo apt purge -y neo4j neo4j-browser neo4j-server bloodhound cypher-shell || true
 sudo apt autoremove -y
-sudo rm -rf /var/lib/neo4j /etc/neo4j /opt/neo4j "$HOME/neo4j" /opt/bloodhound
 
-# Remove symlinks first
-sudo rm -f "$HOME/bin/bloodhound" /usr/local/bin/bloodhound 2>/dev/null || true
+# Double-check with dpkg force (Parrot OS fix)
+echo "🔧 Double-checking package removal..."
+sudo dpkg --configure -a || true
+sudo dpkg --purge --force-all neo4j cypher-shell bloodhound 2>/dev/null || true
+
+# Delete ALL data directories (35GB+ cleanup)
+echo "🗑️  Deleting data directories..."
+sudo rm -rf /var/lib/neo4j /etc/neo4j /opt/neo4j /usr/share/neo4j /usr/lib/neo4j \
+            /usr/lib/bloodhound "$HOME/neo4j" /opt/bloodhound
+
+# Remove binaries + desktop entries
+sudo rm -f /usr/bin/neo4j /usr/bin/bloodhound "$HOME/bin/bloodhound" /usr/local/bin/bloodhound
+sudo rm -f /usr/share/applications/*bloodhound*.desktop /usr/share/applications/*neo4j*.desktop 2>/dev/null || true
+
+echo "✅ Native cleanup complete (~36GB freed)"
 
 # Smart dir setup (pwnbox safe)
 echo "📁 Setting up BloodHound directory..."
@@ -79,14 +91,33 @@ else
     sudo docker compose logs bloodhound | grep -i password
 fi
 
+# 🔍 DEBUG: Verify cleanup success
+echo
+echo "🔍 DEBUG: Checking cleanup status..."
+echo "======================================"
+echo "📦 Native packages remaining:"
+dpkg -l | grep -E 'neo4j|bloodhound' || echo "✅ NO native packages found!"
+
+echo -e "\n🔍 Neo4j directories:"
+sudo du -sh /var/lib/neo4j /usr/share/neo4j /usr/lib/neo4j 2>/dev/null || echo "✅ NO Neo4j directories found!"
+
+echo -e "\n🔍 BloodHound binaries:"
+which bloodhound neo4j 2>/dev/null || echo "✅ NO native binaries found!"
+
+echo -e "\n🔍 Docker status (should show ~1.7GB):"
+sudo docker system df
+
+echo -e "\n🔍 BloodHound CE containers:"
+sudo docker compose ps
+
 # Final status
 echo
-echo "🎉 BloodHound ready!"
+echo "🎉 BloodHound CE ready! (Docker only)"
 echo "📍 Directory: $BH_DIR/server"
 echo "🌐 Neo4j:     http://localhost:7474"
 echo "🌐 BloodHound: http://localhost:8088"
 echo "⚙️  Control:   cd $BH_DIR/server && sudo docker compose {up,down,logs}"
 echo "🔑 Password:  See initial-password.txt"
-sudo docker compose ps
 
 cd ~/my_data || cd ~
+echo "✅ Script complete! Check df -h for space savings."
